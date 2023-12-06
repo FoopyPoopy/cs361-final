@@ -55,7 +55,7 @@ class TestGis < Test::Unit::TestCase
   def test_world
     json = TrackWaypoint.new
     w = Waypoint.new(:lat => -121.5, :lon => 45.5, :ele => 30, :name => "home", :type => "flag", :json => json)
-    w2 = Waypoint.new(:lat => -121.5, :lon => 45.6, :ele => 100000, :name => "store", :type => '', :json => json)
+    w2 = Waypoint.new(:lat => -121.5, :lon => 45.6, :ele => 100000, :name => "store", :type => "dot", :json => json)
     ts1 = [
       Point.new(-122, 45),
       Point.new(-122, 46),
