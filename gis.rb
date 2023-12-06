@@ -141,7 +141,7 @@ class World
   def to_geojson()
     string = '{"type": "FeatureCollection","features": ['
     
-    @features.each_with_index do |features, index|
+    @features.each_with_index do |feature, index|
       if index != 0
         string +=","
       end
