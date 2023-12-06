@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 class Track
-  attr_accessor :name, :json, :segments
+  attr_accessor :name, :segments, :json
 
   def initialize(args)
     @name = args[:name] || ''
@@ -23,7 +23,7 @@ class TrackJson
       json += '"properties": {"title": "' + track.name + '"},'
     end
 
-    json += '"geometry": {"type": "MultiLineString", "coordinates": ['
+    json += '"geometry": {"type": "MultiLineString","coordinates": ['
     
     track.segments.each_with_index do |segment, index|
       if index > 0
@@ -49,13 +49,12 @@ class TrackJson
       end
 
       json += track_json_segment
-      json+= ']'
+      json += ']'
     end
     json + ']}}'
   end
 
 end
-
 
 class TrackSegment
   attr_reader :coordinates
@@ -68,7 +67,7 @@ class Point
 
   attr_reader :lat, :lon, :ele
 
-  def initialize(lon, lat, ele=nil)
+  def initialize(lon, lat, ele=100000)
     @lon = lon
     @lat = lat
     @ele = ele
@@ -138,7 +137,7 @@ class World
     @features.append(type)
   end
 
-  def to_geojson()
+  def to_geojson
     string = '{"type": "FeatureCollection","features": ['
     
     @features.each_with_index do |feature, index|
@@ -154,8 +153,8 @@ end
 
 def main()
   json = TrackWaypoint.new
-  waypoint1 = Waypoint.new(:lat => -121.5, :lon =>45.5, :ele => 30, :name => "home", :type => "flag", :json => json)
-  waypoint2 = Waypoint.new(:lat => -121.5, :lon =>45.6, :ele => 100000, :name => "store", :type => "dot", :json => json)
+  w = Waypoint.new(:lat => -121.5, :lon =>45.5, :ele => 30, :name => "home", :type => "flag", :json => json)
+  w2 = Waypoint.new(:lat => -121.5, :lon =>45.6, :ele => 100000, :name => "store", :type => "dot", :json => json)
   
   ts1 = [
   Point.new(-122, 45),
@@ -181,9 +180,9 @@ def main()
   t = Track.new(:segments => [track_segment1, track_segment2], :name => "track 1", :json => json)
   t2 = Track.new(:segments => [track_segment3], :name => "track 2", :json => json)
 
-  world = World.new("My Data", [waypoint1, waypoint2, t, t2])
+  world = World.new("My Data", [w, w2, t, t2])
 
-  puts world.to_geojson()
+  puts world.to_geojson
 end
 
 if File.identical?(__FILE__, $0)
