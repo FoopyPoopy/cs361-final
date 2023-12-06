@@ -1,53 +1,62 @@
 #!/usr/bin/env ruby
 
 class Track
-  def initialize(segments, name=nil)
-    @name = name
-    segment_objects = []
-    segments.each do |s|
-      segment_objects.append(TrackSegment.new(s))
-    end
-    # set segments to segment_objects
-    @segments = segment_objects
-  end
+  attr_accessor :name, :json, :segments
 
-  def get_track_json()
-    j = '{'
-    j += '"type": "Feature", '
-    if @name != nil
-      j+= '"properties": {'
-      j += '"title": "' + @name + '"'
-      j += '},'
-    end
-    j += '"geometry": {'
-    j += '"type": "MultiLineString",'
-    j +='"coordinates": ['
-    # Loop through all the segment objects
-    @segments.each_with_index do |s, index|
-      if index > 0
-        j += ","
-      end
-      j += '['
-      # Loop through all the coordinates in the segment
-      tsj = ''
-      s.coordinates.each do |c|
-        if tsj != ''
-          tsj += ','
-        end
-        # Add the coordinate
-        tsj += '['
-        tsj += "#{c.lon},#{c.lat}"
-        if c.ele != nil
-          tsj += ",#{c.ele}"
-        end
-        tsj += ']'
-      end
-      j+=tsj
-      j+=']'
-    end
-    j + ']}}'
+  def initialize(args)
+    @name = args[:name] || ''
+    @segments = args[:segments]
+    @json = args[:json]
+  end
+    
+  def get_json
+    json.get_json(self)
   end
 end
+
+class TrackJson
+  #Pretty much just refactored the original to be more defined than single letter variables
+  def get_json(track)
+    json = '{"type": "Feature", '
+
+    if !track.name.empty?
+      json += '"properties": {"title": "' + track.name + '"},'
+    end
+
+    json += '"geometry": {"type": "MultiLineString", "coordinates": ['
+    
+    track.segments.each_with_index do |segment, index|
+      if index > 0
+        json += ","
+      end
+
+      json += '['
+
+      track_json_segment = ''
+
+      segment.coordinates.each do |coordinate|
+        if !track_json_segment.empty?
+          track_json_segment += ','
+        end
+        # longitude, latitude. Cool functions
+        track_json_segment += "[#{coordinate.lon}, #{coordinate.lat}"
+        
+        if coordinate.ele != 100000
+          track_json_segment += ",#{coordinate.ele}"
+        end
+        
+        track_json_segment += ']'
+      end
+
+      json += track_json_segment
+      json+= ']'
+    end
+    json + ']}}'
+  end
+
+end
+
+
 class TrackSegment
   attr_reader :coordinates
   def initialize(coordinates)
@@ -67,92 +76,112 @@ class Point
 end
 
 class Waypoint
+  attr_reader :lat, :lon, :ele, :name, :type, :json
 
-
-
-attr_reader :lat, :lon, :ele, :name, :type
-
-  def initialize(lon, lat, ele=nil, name=nil, type=nil)
-    @lat = lat
-    @lon = lon
-    @ele = ele
-    @name = name
-    @type = type
+  def initialize(args)
+    @lat = args[:lat]
+    @lon = args[:lon]
+    @ele = args[:ele] || 100000
+    @name = args[:name] || ''
+    @type = args[:type] || ''
+    @json = args[:json]
   end
 
-  def get_waypoint_json(indent=0)
-    j = '{"type": "Feature",'
-    # if name is not nil or type is not nil
-    j += '"geometry": {"type": "Point","coordinates": '
-    j += "[#{@lon},#{@lat}"
-    if ele != nil
-      j += ",#{@ele}"
+  def get_json
+    json.get_json(self)
+  end
+end
+
+#Similar to above, instead make it two separate classes. like TrackSegment but TrackWaypoint
+class TrackWaypoint
+  def get_json(waypoint)
+    json = '{"type": "Feature","geometry": {"type": "Point","coordinates": '
+    #These were backwards. should be Lat, Lon. 
+    json += "[#{waypoint.lat},#{waypoint.lon}"
+    
+    if waypoint.ele != 100000
+      json += ",#{waypoint.ele}"
     end
-    j += ']},'
-    if name != nil or type != nil
-      j += '"properties": {'
-      if name != nil
-        j += '"title": "' + @name + '"'
+    
+    json += ']},'
+
+    if !waypoint.name.empty? or !waypoint.type.empty?
+      json += '"properties": {'
+
+      if !waypoint.name.empty?
+        json += '"title": "' + waypoint.name + '"'
       end
-      if type != nil  # if type is not nil
-        if name != nil
-          j += ','
+
+      if !waypoint.type.empty?
+        
+        if !waypoint.name.empty?
+          json += ','
         end
-        j += '"icon": "' + @type + '"'  # type is the icon
+
+        json += '"icon": "' + waypoint.type + '"'
       end
-      j += '}'
+      json += '}'
     end
-    j += "}"
-    return j
+    json += "}"
+    # return json
   end
 end
 
 class World
-def initialize(name, things)
-  @name = name
-  @features = things
-end
-  def add_feature(f)
-    @features.append(t)
+
+  def initialize(name, features)
+    @name = name
+    @features = features
   end
 
-  def to_geojson(indent=0)
-    # Write stuff
-    s = '{"type": "FeatureCollection","features": ['
-    @features.each_with_index do |f,i|
-      if i != 0
-        s +=","
-      end
-        if f.class == Track
-            s += f.get_track_json
-        elsif f.class == Waypoint
-            s += f.get_waypoint_json
-      end
-    end
-    s + "]}"
+  def add_feature(feature)
+    @features.append(type)
   end
+
+  def to_geojson()
+    string = '{"type": "FeatureCollection","features": ['
+    
+    @features.each_with_index do |features, index|
+      if index != 0
+        string +=","
+      end
+      string += feature.get_json
+    end
+    string + "]}"
+  end
+
 end
 
 def main()
-  w = Waypoint.new(-121.5, 45.5, 30, "home", "flag")
-  w2 = Waypoint.new(-121.5, 45.6, nil, "store", "dot")
+  json = TrackWaypoint.new
+  waypoint1 = Waypoint.new(:lat => -121.5, :lon =>45.5, :ele => 30, :name => "home", :type => "flag", :json => json)
+  waypoint2 = Waypoint.new(:lat => -121.5, :lon =>45.6, :ele => 100000, :name => "store", :type => "dot", :json => json)
+  
   ts1 = [
   Point.new(-122, 45),
   Point.new(-122, 46),
   Point.new(-121, 46),
   ]
 
-  ts2 = [ Point.new(-121, 45), Point.new(-121, 46), ]
+  ts2 = [ 
+    Point.new(-121, 45), 
+    Point.new(-121, 46), 
+  ]
 
   ts3 = [
     Point.new(-121, 45.5),
     Point.new(-122, 45.5),
   ]
 
-  t = Track.new([ts1, ts2], "track 1")
-  t2 = Track.new([ts3], "track 2")
+  track_segment1 = TrackSegment.new(ts1)
+  track_segment2 = TrackSegment.new(ts2)
+  track_segment3 = TrackSegment.new(ts3)
+  json = TrackJson.new
 
-  world = World.new("My Data", [w, w2, t, t2])
+  t = Track.new(:segments => [track_segment1, track_segment2], :name => "track 1", :json => json)
+  t2 = Track.new(:segments => [track_segment3], :name => "track 2", :json => json)
+
+  world = World.new("My Data", [waypoint1, waypoint2, t, t2])
 
   puts world.to_geojson()
 end
